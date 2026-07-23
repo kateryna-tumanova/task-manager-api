@@ -157,7 +157,9 @@ The user and project IDs in the request body must refer to existing records.
 
 The API was tested manually with Postman.
 
-The Postman collection will be added in the `postman/` folder.
+The Postman collection is available here:
+
+[Download the Postman collection](postman/task-manager-api.postman_collection.json)
 
 ### Dynamic test email
 
