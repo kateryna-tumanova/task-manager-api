@@ -159,7 +159,15 @@ The API was tested manually with Postman.
 
 The Postman collection is available here:
 
-[Download the Postman collection](postman/task-manager-api.postman_collection.json)
+[task-manager-api.postman_collection.json](postman/task-manager-api.postman_collection.json)
+
+The Postman collection uses the `{{baseUrl}}` collection variable.
+
+Default value:
+
+```text
+http://localhost:8080
+```
 
 ### Dynamic test email
 
@@ -197,6 +205,20 @@ Recommended test order:
 | 07 | Get Updated Task | `GET /tasks/{{taskId}}` | `200 OK` | The updated task is returned |
 | 08 | Delete Task | `DELETE /tasks/{{taskId}}` | `200 OK` | The task is deleted |
 | 09 | Verify Deleted Task | `GET /tasks/{{taskId}}` | `404 Not Found` | The deleted task is no longer available |
+
+### Example results
+
+#### Create Task
+
+![Create Task request and response](docs/screenshots/create-task.png)
+
+#### Get All Tasks
+
+![Get All Tasks request and response](docs/screenshots/get-all-tasks.png)
+
+#### Update Task
+
+![Update Task request and response](docs/screenshots/update-task.png)
 
 ## How to run locally
 
@@ -260,7 +282,7 @@ Version 1 uses entity objects directly in HTTP requests and responses.
 
 API testing is currently performed manually with Postman.
 
-DTOs, request validation, global exception handling and automated tests are not included in this version.
+DTOs, request validation, global exception handling and comprehensive automated tests are not included in this version.
 
 ## Next steps
 
