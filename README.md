@@ -222,6 +222,13 @@ Recommended test order:
 
 ## How to run locally
 
+### Clone the repository
+
+```bash
+git clone https://github.com/kateryna-tumanova/task-manager-api.git
+cd task-manager-api
+```
+
 ### Prerequisites
 
 - Java 21
