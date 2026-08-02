@@ -1,6 +1,7 @@
 package com.kati.taskmanager.service;
 
 import com.kati.taskmanager.entity.User;
+import com.kati.taskmanager.mapper.UserMapper;
 import com.kati.taskmanager.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -13,10 +14,13 @@ import java.util.List;
 public class UserService{
 
     private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
     // Constructor injection
-    public UserService(UserRepository userRepository){
+    public UserService(UserRepository userRepository,
+                       UserMapper userMapper){
         this.userRepository = userRepository;
+        this.userMapper = userMapper;
     }
 
     public List<User> getAllUsers(){
