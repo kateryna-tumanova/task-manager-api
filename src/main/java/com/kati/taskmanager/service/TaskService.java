@@ -1,85 +1,110 @@
 package com.kati.taskmanager.service;
 
+import com.kati.taskmanager.dto.task.TaskCreateRequest;
+import com.kati.taskmanager.dto.task.TaskResponse;
+import com.kati.taskmanager.dto.task.TaskUpdateRequest;
 import com.kati.taskmanager.entity.Project;
 import com.kati.taskmanager.entity.Task;
 import com.kati.taskmanager.entity.User;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
+import com.kati.taskmanager.mapper.TaskMapper;
 import com.kati.taskmanager.repository.ProjectRepository;
 import com.kati.taskmanager.repository.TaskRepository;
 import com.kati.taskmanager.repository.UserRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
 @Service
-public class TaskService{
+public class TaskService {
+
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
+    private final TaskMapper taskMapper;
 
-    // Constructor through which Spring automatically injects the required repositories
-    public TaskService(TaskRepository taskRepository,
-                       UserRepository userRepository,
-                       ProjectRepository projectRepository){
+    // Constructor injection
+    public TaskService(
+            TaskRepository taskRepository,
+            UserRepository userRepository,
+            ProjectRepository projectRepository,
+            TaskMapper taskMapper
+    ) {
         this.taskRepository = taskRepository;
         this.userRepository = userRepository;
         this.projectRepository = projectRepository;
+        this.taskMapper = taskMapper;
     }
 
-    public List<Task> getAllTasks(){
-        return  taskRepository.findAll();
+    public List<TaskResponse> getAllTasks() {
+        return taskRepository.findAll()
+                .stream()
+                .map(taskMapper::toResponse)
+                .toList();
     }
 
-    public Task getTaskById(Long id){
-        return taskRepository.findById(id)
-               .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found"));
+    public TaskResponse getTaskById(Long id) {
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Task not found"
+                ));
+
+        return taskMapper.toResponse(task);
     }
 
-    public Task createTask(Task task){
+    public TaskResponse createTask(TaskCreateRequest request) {
+        User assignedUser = userRepository.findById(request.assignedUserId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "User not found"
+                ));
 
-        Long userId = task.getAssignedUser().getId();
-        Long projectId = task.getProject().getId();
+        Project project = projectRepository.findById(request.projectId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Project not found"
+                ));
 
-        User existingAssignedUser = userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        Task task = taskMapper.toEntity(request, assignedUser, project);
+        Task savedTask = taskRepository.save(task);
 
-        Project existingProject = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
-
-        task.setAssignedUser(existingAssignedUser);
-        task.setProject(existingProject);
-
-        return taskRepository.save(task);
+        return taskMapper.toResponse(savedTask);
     }
 
-    public Task updateTask(Long id, Task updatedTask){
-
+    public TaskResponse updateTask(Long id, TaskUpdateRequest request) {
         Task existingTask = taskRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Task not found"
+                ));
 
-        Long userId = updatedTask.getAssignedUser().getId();
-        Long projectId = updatedTask.getProject().getId();
+        User assignedUser = userRepository.findById(request.assignedUserId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "User not found"
+                ));
 
-        User existingAssignedUser = userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        Project project = projectRepository.findById(request.projectId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Project not found"
+                ));
 
-        Project existingProject = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
+        taskMapper.updateEntity(request, existingTask, assignedUser, project);
+        Task savedTask = taskRepository.save(existingTask);
 
-        existingTask.setTitle(updatedTask.getTitle());
-        existingTask.setDescription(updatedTask.getDescription());
-        existingTask.setStatus(updatedTask.getStatus());
-        existingTask.setDeadline(updatedTask.getDeadline());
-        existingTask.setAssignedUser(existingAssignedUser);
-        existingTask.setProject(existingProject);
-
-        return taskRepository.save(existingTask);
+        return taskMapper.toResponse(savedTask);
     }
 
-    public void deleteTask(Long id){
+    public void deleteTask(Long id) {
         Task existingTask = taskRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Task not found"
+                ));
+
         taskRepository.delete(existingTask);
     }
 }

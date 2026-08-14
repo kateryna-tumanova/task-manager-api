@@ -1,6 +1,8 @@
 package com.kati.taskmanager.controller;
 
-import com.kati.taskmanager.entity.Task;
+import com.kati.taskmanager.dto.task.TaskCreateRequest;
+import com.kati.taskmanager.dto.task.TaskResponse;
+import com.kati.taskmanager.dto.task.TaskUpdateRequest;
 import com.kati.taskmanager.service.TaskService;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,35 +14,37 @@ public class TaskController {
 
     private final TaskService taskService;
 
-    public TaskController(TaskService taskService){
+    public TaskController(TaskService taskService) {
         this.taskService = taskService;
     }
 
     @GetMapping
-    public List<Task> getAllTasks(){
+    public List<TaskResponse> getAllTasks() {
         return taskService.getAllTasks();
     }
 
     @GetMapping("/{id}")
-    public Task getTaskById(@PathVariable Long id){
+    public TaskResponse getTaskById(@PathVariable Long id) {
         return taskService.getTaskById(id);
     }
 
     @PostMapping
-    public Task createTask(@RequestBody Task task){
-        return taskService.createTask(task);
+    public TaskResponse createTask(
+            @RequestBody TaskCreateRequest request
+    ) {
+        return taskService.createTask(request);
     }
 
     @PutMapping("/{id}")
-    public Task updateTask(@PathVariable Long id,
-                           @RequestBody Task updatedTask){
-        return taskService.updateTask(id, updatedTask);
-
+    public TaskResponse updateTask(
+            @PathVariable Long id,
+            @RequestBody TaskUpdateRequest request
+    ) {
+        return taskService.updateTask(id, request);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteTask(@PathVariable Long id){
-         taskService.deleteTask(id);
+    public void deleteTask(@PathVariable Long id) {
+        taskService.deleteTask(id);
     }
-
 }
