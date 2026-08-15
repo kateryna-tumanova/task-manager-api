@@ -4,6 +4,7 @@ import com.kati.taskmanager.dto.user.UserCreateRequest;
 import com.kati.taskmanager.dto.user.UserResponse;
 import com.kati.taskmanager.dto.user.UserUpdateRequest;
 import com.kati.taskmanager.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,14 +30,16 @@ public class UserController {
     }
 
     @PostMapping
-    public UserResponse createUser(@RequestBody UserCreateRequest request) {
+    public UserResponse createUser(
+            @Valid @RequestBody UserCreateRequest request
+    ) {
         return userService.createUser(request);
     }
 
     @PutMapping("/{id}")
     public UserResponse updateUser(
             @PathVariable Long id,
-            @RequestBody UserUpdateRequest request
+            @Valid @RequestBody UserUpdateRequest request
     ) {
         return userService.updateUser(id, request);
     }

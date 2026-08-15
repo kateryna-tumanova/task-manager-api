@@ -4,6 +4,7 @@ import com.kati.taskmanager.dto.project.ProjectCreateRequest;
 import com.kati.taskmanager.dto.project.ProjectResponse;
 import com.kati.taskmanager.dto.project.ProjectUpdateRequest;
 import com.kati.taskmanager.service.ProjectService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,7 +31,7 @@ public class ProjectController {
 
     @PostMapping
     public ProjectResponse createProject(
-            @RequestBody ProjectCreateRequest request
+            @Valid @RequestBody ProjectCreateRequest request
     ) {
         return projectService.createProject(request);
     }
@@ -38,7 +39,7 @@ public class ProjectController {
     @PutMapping("/{id}")
     public ProjectResponse updateProject(
             @PathVariable Long id,
-            @RequestBody ProjectUpdateRequest request
+            @Valid @RequestBody ProjectUpdateRequest request
     ) {
         return projectService.updateProject(id, request);
     }
