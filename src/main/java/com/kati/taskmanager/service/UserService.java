@@ -4,11 +4,11 @@ import com.kati.taskmanager.dto.user.UserCreateRequest;
 import com.kati.taskmanager.dto.user.UserResponse;
 import com.kati.taskmanager.dto.user.UserUpdateRequest;
 import com.kati.taskmanager.entity.User;
+import com.kati.taskmanager.exception.UserAlreadyExistsException;
+import com.kati.taskmanager.exception.UserNotFoundException;
 import com.kati.taskmanager.mapper.UserMapper;
 import com.kati.taskmanager.repository.UserRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -33,20 +33,14 @@ public class UserService {
 
     public UserResponse getUserById(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "User not found"
-                ));
+                .orElseThrow(() -> new UserNotFoundException(id));
 
         return userMapper.toResponse(user);
     }
 
     public UserResponse createUser(UserCreateRequest request) {
         if (userRepository.existsByEmailIgnoreCase(request.email())) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "A user with this email already exists."
-            );
+            throw new UserAlreadyExistsException();
         }
 
         User user = userMapper.toEntity(request);
@@ -57,19 +51,13 @@ public class UserService {
 
     public UserResponse updateUser(Long id, UserUpdateRequest request) {
         User existingUser = userRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "User not found"
-                ));
+                .orElseThrow(() -> new UserNotFoundException(id));
 
         if (userRepository.existsByEmailIgnoreCaseAndIdNot(
                 request.email(),
                 id
         )) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "A user with this email already exists."
-            );
+            throw new UserAlreadyExistsException();
         }
 
         userMapper.updateEntity(request, existingUser);
@@ -80,10 +68,7 @@ public class UserService {
 
     public void deleteUser(Long id) {
         User existingUser = userRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "User not found"
-                ));
+                .orElseThrow(() -> new UserNotFoundException(id));
 
         userRepository.delete(existingUser);
     }

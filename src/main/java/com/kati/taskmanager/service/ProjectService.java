@@ -4,11 +4,10 @@ import com.kati.taskmanager.dto.project.ProjectCreateRequest;
 import com.kati.taskmanager.dto.project.ProjectResponse;
 import com.kati.taskmanager.dto.project.ProjectUpdateRequest;
 import com.kati.taskmanager.entity.Project;
+import com.kati.taskmanager.exception.ProjectNotFoundException;
 import com.kati.taskmanager.mapper.ProjectMapper;
 import com.kati.taskmanager.repository.ProjectRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -33,10 +32,7 @@ public class ProjectService {
 
     public ProjectResponse getProjectById(Long id) {
         Project project = projectRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Project not found"
-                ));
+                .orElseThrow(() -> new ProjectNotFoundException(id));
 
         return projectMapper.toResponse(project);
     }
@@ -53,10 +49,7 @@ public class ProjectService {
             ProjectUpdateRequest request
     ) {
         Project existingProject = projectRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Project not found"
-                ));
+                .orElseThrow(() -> new ProjectNotFoundException(id));
 
         projectMapper.updateEntity(request, existingProject);
         Project savedProject = projectRepository.save(existingProject);
@@ -66,10 +59,7 @@ public class ProjectService {
 
     public void deleteProject(Long id) {
         Project existingProject = projectRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Project not found"
-                ));
+                .orElseThrow(() -> new ProjectNotFoundException(id));
 
         projectRepository.delete(existingProject);
     }
