@@ -5,6 +5,8 @@ import com.kati.taskmanager.dto.task.TaskResponse;
 import com.kati.taskmanager.dto.task.TaskUpdateRequest;
 import com.kati.taskmanager.service.TaskService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,10 +32,11 @@ public class TaskController {
     }
 
     @PostMapping
-    public TaskResponse createTask(
+    public ResponseEntity<TaskResponse> createTask(
             @Valid @RequestBody TaskCreateRequest request
     ) {
-        return taskService.createTask(request);
+        TaskResponse response = taskService.createTask(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/{id}")
@@ -45,7 +48,8 @@ public class TaskController {
     }
 
     @DeleteMapping("/{id}")
-    public void deleteTask(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
         taskService.deleteTask(id);
+        return ResponseEntity.noContent().build();
     }
 }

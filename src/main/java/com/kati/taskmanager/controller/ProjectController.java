@@ -5,6 +5,8 @@ import com.kati.taskmanager.dto.project.ProjectResponse;
 import com.kati.taskmanager.dto.project.ProjectUpdateRequest;
 import com.kati.taskmanager.service.ProjectService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,10 +32,11 @@ public class ProjectController {
     }
 
     @PostMapping
-    public ProjectResponse createProject(
+    public ResponseEntity<ProjectResponse> createProject(
             @Valid @RequestBody ProjectCreateRequest request
     ) {
-        return projectService.createProject(request);
+        ProjectResponse response = projectService.createProject(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/{id}")
@@ -45,7 +48,8 @@ public class ProjectController {
     }
 
     @DeleteMapping("/{id}")
-    public void deleteProject(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteProject(@PathVariable Long id) {
         projectService.deleteProject(id);
+        return ResponseEntity.noContent().build();
     }
 }

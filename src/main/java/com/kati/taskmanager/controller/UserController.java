@@ -5,6 +5,8 @@ import com.kati.taskmanager.dto.user.UserResponse;
 import com.kati.taskmanager.dto.user.UserUpdateRequest;
 import com.kati.taskmanager.service.UserService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,10 +32,11 @@ public class UserController {
     }
 
     @PostMapping
-    public UserResponse createUser(
+    public ResponseEntity<UserResponse> createUser(
             @Valid @RequestBody UserCreateRequest request
     ) {
-        return userService.createUser(request);
+        UserResponse response = userService.createUser(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/{id}")
@@ -45,7 +48,8 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    public void deleteUser(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
+        return ResponseEntity.noContent().build();
     }
 }
