@@ -14,6 +14,7 @@ import com.kati.taskmanager.repository.ProjectRepository;
 import com.kati.taskmanager.repository.TaskRepository;
 import com.kati.taskmanager.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -38,6 +39,7 @@ public class TaskService {
         this.taskMapper = taskMapper;
     }
 
+    @Transactional(readOnly = true)
     public List<TaskResponse> getAllTasks() {
         return taskRepository.findAll()
                 .stream()
@@ -45,6 +47,7 @@ public class TaskService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public TaskResponse getTaskById(Long id) {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new TaskNotFoundException(id));
@@ -52,6 +55,7 @@ public class TaskService {
         return taskMapper.toResponse(task);
     }
 
+    @Transactional
     public TaskResponse createTask(TaskCreateRequest request) {
         User assignedUser = userRepository.findById(request.assignedUserId())
                 .orElseThrow(() -> new UserNotFoundException(request.assignedUserId()));
@@ -65,6 +69,7 @@ public class TaskService {
         return taskMapper.toResponse(savedTask);
     }
 
+    @Transactional
     public TaskResponse updateTask(Long id, TaskUpdateRequest request) {
         Task existingTask = taskRepository.findById(id)
                 .orElseThrow(() -> new TaskNotFoundException(id));
@@ -81,6 +86,7 @@ public class TaskService {
         return taskMapper.toResponse(savedTask);
     }
 
+    @Transactional
     public void deleteTask(Long id) {
         Task existingTask = taskRepository.findById(id)
                 .orElseThrow(() -> new TaskNotFoundException(id));

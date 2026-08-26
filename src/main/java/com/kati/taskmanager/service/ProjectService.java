@@ -8,6 +8,7 @@ import com.kati.taskmanager.exception.ProjectNotFoundException;
 import com.kati.taskmanager.mapper.ProjectMapper;
 import com.kati.taskmanager.repository.ProjectRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -23,6 +24,7 @@ public class ProjectService {
         this.projectMapper = projectMapper;
     }
 
+    @Transactional(readOnly = true)
     public List<ProjectResponse> getAllProjects() {
         return projectRepository.findAll()
                 .stream()
@@ -30,6 +32,7 @@ public class ProjectService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public ProjectResponse getProjectById(Long id) {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ProjectNotFoundException(id));
@@ -37,6 +40,7 @@ public class ProjectService {
         return projectMapper.toResponse(project);
     }
 
+    @Transactional
     public ProjectResponse createProject(ProjectCreateRequest request) {
         Project project = projectMapper.toEntity(request);
         Project savedProject = projectRepository.save(project);
@@ -44,6 +48,7 @@ public class ProjectService {
         return projectMapper.toResponse(savedProject);
     }
 
+    @Transactional
     public ProjectResponse updateProject(
             Long id,
             ProjectUpdateRequest request
@@ -57,6 +62,7 @@ public class ProjectService {
         return projectMapper.toResponse(savedProject);
     }
 
+    @Transactional
     public void deleteProject(Long id) {
         Project existingProject = projectRepository.findById(id)
                 .orElseThrow(() -> new ProjectNotFoundException(id));

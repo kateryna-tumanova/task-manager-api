@@ -9,6 +9,7 @@ import com.kati.taskmanager.exception.UserNotFoundException;
 import com.kati.taskmanager.mapper.UserMapper;
 import com.kati.taskmanager.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -24,6 +25,7 @@ public class UserService {
         this.userMapper = userMapper;
     }
 
+    @Transactional(readOnly = true)
     public List<UserResponse> getAllUsers() {
         return userRepository.findAll()
                 .stream()
@@ -31,6 +33,7 @@ public class UserService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public UserResponse getUserById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
@@ -38,6 +41,7 @@ public class UserService {
         return userMapper.toResponse(user);
     }
 
+    @Transactional
     public UserResponse createUser(UserCreateRequest request) {
         if (userRepository.existsByEmailIgnoreCase(request.email())) {
             throw new UserAlreadyExistsException();
@@ -49,6 +53,7 @@ public class UserService {
         return userMapper.toResponse(savedUser);
     }
 
+    @Transactional
     public UserResponse updateUser(Long id, UserUpdateRequest request) {
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
@@ -66,6 +71,7 @@ public class UserService {
         return userMapper.toResponse(savedUser);
     }
 
+    @Transactional
     public void deleteUser(Long id) {
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
