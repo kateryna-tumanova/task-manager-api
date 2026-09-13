@@ -20,7 +20,7 @@ public class User{
     public User(){
     }
 
-    // 2. All-args constructor (for convenient object creation in our code)
+    // 2. Convenience constructor without id because the database generates it
     public User(String name, String email){
         this.name = name;
         this.email = email;
