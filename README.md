@@ -2,7 +2,7 @@
 
 A REST API for managing users, projects and tasks.
 
-Version 1 provides basic CRUD operations using a layered Spring Boot architecture and PostgreSQL persistence.
+Version 2 extends the original CRUD application with DTOs, request validation, centralized error handling, correct HTTP status codes, transactional service methods, unit tests, Docker Compose for PostgreSQL, and an updated Postman test collection.
 
 ## What it does
 
@@ -12,18 +12,25 @@ The application manages three main entities:
 - Project
 - Task
 
-A user can have many tasks.
-A project can have many tasks.
 Each task belongs to one user and one project.
+
+A user can be assigned to multiple tasks, and a project can contain multiple tasks.
 
 ## Features
 
 - CRUD operations for users
 - CRUD operations for projects
 - CRUD operations for tasks
+- DTO-based API layer
+- Request validation with Jakarta Bean Validation
+- Centralized exception handling
+- Correct HTTP response status codes
 - Relations between tasks, users and projects
-- PostgreSQL persistence
-- Manual API testing with Postman
+- PostgreSQL persistence with Spring Data JPA and Hibernate
+- Transaction management with `@Transactional`
+- Unit tests with JUnit 5 and Mockito
+- PostgreSQL local environment with Docker Compose
+- API verification with Postman
 
 ## Technologies
 
@@ -32,25 +39,50 @@ Each task belongs to one user and one project.
 - Spring Web
 - Spring Data JPA
 - Hibernate
+- Jakarta Bean Validation
 - Maven
-- PostgreSQL
+- PostgreSQL 15
+- Docker Compose (PostgreSQL container)
+- JUnit 5
+- Mockito
 - Postman
+- Git
 
 ## Architecture
 
 ```text
-HTTP request
+HTTP JSON
+    ↓
+Request DTO
     ↓
 Controller
     ↓
 Service
-    ↓
-Repository
-    ↓
-Hibernate / JPA
-    ↓
-PostgreSQL
+   ↙     ↘
+Mapper   Repository
+  ↓         ↓
+Entity   Hibernate / JPA
+            ↓
+        PostgreSQL
 ```
+
+Dedicated mapper classes convert between DTOs and entities:
+
+```text
+Request DTO
+    ↓
+Mapper
+    ↓
+Entity
+
+Entity
+    ↓
+Mapper
+    ↓
+Response DTO
+```
+
+This keeps persistence entities separate from the public API contract.
 
 ## Main endpoints
 
@@ -84,6 +116,18 @@ PUT    /tasks/{id}
 DELETE /tasks/{id}
 ```
 
+## HTTP status codes
+
+| Operation | Status |
+|---|---|
+| Successful GET | `200 OK` |
+| Successful PUT | `200 OK` |
+| Successful POST | `201 Created` |
+| Successful DELETE | `204 No Content` |
+| Validation error | `400 Bad Request` |
+| Resource not found | `404 Not Found` |
+| Duplicate user email | `409 Conflict` |
+
 ## Example request bodies
 
 ### Create User
@@ -95,15 +139,13 @@ DELETE /tasks/{id}
 }
 ```
 
-The Postman collection generates a unique test email automatically.
-
 ### Create Project
 
 ```json
 {
   "name": "Website Redesign",
   "status": "Planned",
-  "deadline": "2026-12-01"
+  "deadline": "2030-12-01"
 }
 ```
 
@@ -111,22 +153,16 @@ The Postman collection generates a unique test email automatically.
 
 A task requires an existing user and an existing project.
 
-First create a user and a project. Then use the returned IDs when creating a task.
-
-The values below are example IDs and should be replaced with IDs of existing records.
+First create a user and a project. Then use their IDs in the task request.
 
 ```json
 {
   "title": "Write documentation",
   "description": "Prepare basic API documentation",
   "status": "Planned",
-  "deadline": "2026-11-15",
-  "assignedUser": {
-    "id": 1
-  },
-  "project": {
-    "id": 1
-  }
+  "deadline": "2030-11-15",
+  "assignedUserId": 1,
+  "projectId": 1
 }
 ```
 
@@ -134,36 +170,110 @@ The values below are example IDs and should be replaced with IDs of existing rec
 
 The task ID is provided in the request URL:
 
-`PUT /tasks/{id}`
+```text
+PUT /tasks/{id}
+```
 
-The user and project IDs in the request body must refer to existing records.
+The `assignedUserId` and `projectId` values must refer to existing records.
 
 ```json
 {
   "title": "Update documentation",
   "description": "Add more details to API documentation",
   "status": "In Progress",
-  "deadline": "2026-12-01",
-  "assignedUser": {
-    "id": 1
-  },
-  "project": {
-    "id": 1
+  "deadline": "2030-12-01",
+  "assignedUserId": 1,
+  "projectId": 1
+}
+```
+
+## Validation and error handling
+
+Request DTOs use Jakarta Bean Validation annotations such as:
+
+- `@NotBlank`
+- `@NotNull`
+- `@Email`
+- `@Size`
+- `@Positive`
+- `@FutureOrPresent`
+
+Validation errors and application exceptions are handled centrally by `GlobalExceptionHandler`.
+
+Example validation response:
+
+```json
+{
+  "timestamp": "2026-09-12T20:00:00Z",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Request validation failed.",
+  "path": "/users",
+  "validationErrors": {
+    "email": "must be a well-formed email address"
   }
 }
 ```
 
-## API testing with Postman
+The application also defines custom exceptions for missing resources and duplicate user emails.
 
-The API was tested manually with Postman.
+## Automated tests
+
+The project contains 39 unit tests.
+
+The tests cover:
+
+- `UserService`
+- `ProjectService`
+- `TaskService`
+- `UserMapper`
+- `ProjectMapper`
+- `TaskMapper`
+
+Service tests use JUnit 5 and Mockito to verify business logic in isolation.
+
+Mapper tests use real mapper instances and verify conversions between DTOs and entities.
+
+Run the tests on Windows:
+
+```powershell
+.\mvnw.cmd test
+```
+
+On Linux or macOS:
+
+```bash
+./mvnw test
+```
+
+The unit test suite does not require a running PostgreSQL database.
+
+## API verification with Postman
 
 The Postman collection is available here:
 
 [task-manager-api.postman_collection.json](postman/task-manager-api.postman_collection.json)
 
-The Postman collection uses the `{{baseUrl}}` collection variable.
+The collection contains 12 requests and 13 tests.
 
-Default value:
+A successful Collection Runner execution produces:
+
+```text
+12 requests
+13 tests passed
+0 failed
+0 errors
+```
+
+The collection uses these variables:
+
+- `baseUrl`
+- `userId`
+- `projectId`
+- `taskId`
+- `userEmail`
+
+The default API URL is:
 
 ```text
 http://localhost:8080
@@ -171,7 +281,7 @@ http://localhost:8080
 
 ### Dynamic test email
 
-Before the `POST /users` request is sent, a Postman pre-request script generates a unique email address:
+Before the first `POST /users` request, a Postman pre-request script generates a unique email:
 
 ```javascript
 const uniqueEmail = `jakub.kowalski.${Date.now()}@example.com`;
@@ -179,48 +289,54 @@ const uniqueEmail = `jakub.kowalski.${Date.now()}@example.com`;
 pm.collectionVariables.set("userEmail", uniqueEmail);
 ```
 
-The current timestamp makes the email unique for each test run.
+The generated email is stored in the `userEmail` collection variable.
 
-The generated value is stored in the `userEmail` collection variable and used in the request body:
+The same value is later reused to verify the duplicate-email conflict.
 
-```json
-{
-  "name": "Jakub",
-  "email": "{{userEmail}}"
-}
-```
+### Collection flow
 
-This prevents duplicate-email conflicts when the collection is run multiple times.
-
-Recommended test order:
-
-| Step | Operation | Request | Expected status | Expected result |
-|---:|---|---|---|---|
-| 01 | Create User | `POST /users` | `200 OK` | A user is created and `userId` is stored |
-| 02 | Create Project | `POST /projects` | `200 OK` | A project is created and `projectId` is stored |
-| 03 | Create Task | `POST /tasks` | `200 OK` | A task is created and `taskId` is stored |
-| 04 | Get All Tasks | `GET /tasks` | `200 OK` | The list of tasks is returned |
-| 05 | Get Task By ID | `GET /tasks/{{taskId}}` | `200 OK` | The created task is returned |
-| 06 | Update Task | `PUT /tasks/{{taskId}}` | `200 OK` | The task is updated |
-| 07 | Get Updated Task | `GET /tasks/{{taskId}}` | `200 OK` | The updated task is returned |
-| 08 | Delete Task | `DELETE /tasks/{{taskId}}` | `200 OK` | The task is deleted |
-| 09 | Verify Deleted Task | `GET /tasks/{{taskId}}` | `404 Not Found` | The deleted task is no longer available |
+| Step | Operation | Request | Expected status |
+|---:|---|---|---|
+| 01 | Create User | `POST /users` | `201 Created` |
+| 02 | Create Project | `POST /projects` | `201 Created` |
+| 03 | Create Task | `POST /tasks` | `201 Created` |
+| 04 | Get All Tasks | `GET /tasks` | `200 OK` |
+| 05 | Get Task By ID | `GET /tasks/{{taskId}}` | `200 OK` |
+| 06 | Update Task | `PUT /tasks/{{taskId}}` | `200 OK` |
+| 07 | Get Updated Task | `GET /tasks/{{taskId}}` | `200 OK` |
+| 08 | Delete Task | `DELETE /tasks/{{taskId}}` | `204 No Content` |
+| 09 | Verify Deleted Task | `GET /tasks/{{taskId}}` | `404 Not Found` |
+| 10 | Invalid User Email | `POST /users` | `400 Bad Request` |
+| 11 | Task Not Found | `GET /tasks/9999999` | `404 Not Found` |
+| 12 | Duplicate Email | `POST /users` | `409 Conflict` |
 
 ### Example results
 
-#### Create Task
+#### Create Task — 201 Created
 
-![Create Task request and response](docs/screenshots/create-task.png)
+![Create Task - 201 Created](docs/screenshots/create-task-201.png)
 
-#### Get All Tasks
+#### Validation Error — 400 Bad Request
 
-![Get All Tasks request and response](docs/screenshots/get-all-tasks.png)
+![Validation Error - 400 Bad Request](docs/screenshots/validation-error-400.png)
 
-#### Update Task
+#### Postman Collection Runner — 13/13 tests passed
 
-![Update Task request and response](docs/screenshots/update-task.png)
+Requests 01–06:
+
+![Postman Collection Runner 01-06](docs/screenshots/collection-runner-01-06.png)
+
+Requests 07–12:
+
+![Postman Collection Runner 07-12](docs/screenshots/collection-runner-07-12.png)
 
 ## How to run locally
+
+### Prerequisites
+
+- Java 21
+- Docker with Docker Compose
+- Git
 
 ### Clone the repository
 
@@ -229,49 +345,67 @@ git clone https://github.com/kateryna-tumanova/task-manager-api.git
 cd task-manager-api
 ```
 
-### Prerequisites
+### Configure database environment variables
 
-- Java 21
-- PostgreSQL
+`DB_USERNAME` and `DB_PASSWORD` are used by both Docker Compose and the Spring Boot application.
 
-### Create the database
-
-```sql
-CREATE DATABASE taskmanager_db;
-```
-
-### Configure environment variables
-
-The application reads database credentials from environment variables.
-
-Required environment variables:
-
-```text
-DB_USERNAME=your_postgres_username
-DB_PASSWORD=your_postgres_password
-```
-
-Optional variable:
-
-```text
-DB_URL=jdbc:postgresql://localhost:5432/taskmanager_db
-```
-
-The default database URL is:
+`DB_URL` is used by the Spring Boot application. It is optional because the project already uses the following default URL:
 
 ```text
 jdbc:postgresql://localhost:5432/taskmanager_db
 ```
 
-You can configure these variables in your operating system or in the IntelliJ IDEA Run Configuration.
+Example values:
 
-### Run on Windows
+```text
+DB_USERNAME=your_postgres_username
+DB_PASSWORD=your_postgres_password
+DB_URL=jdbc:postgresql://localhost:5432/taskmanager_db
+```
+
+Do not store real database credentials in the repository.
+
+### Start PostgreSQL with Docker Compose
+
+On Windows PowerShell:
+
+```powershell
+$env:DB_USERNAME="your_postgres_username"
+$env:DB_PASSWORD="your_postgres_password"
+
+docker compose up -d
+```
+
+On Linux or macOS:
+
+```bash
+export DB_USERNAME="your_postgres_username"
+export DB_PASSWORD="your_postgres_password"
+
+docker compose up -d
+```
+
+Check the PostgreSQL container:
+
+```bash
+docker compose ps
+```
+
+Docker Compose starts PostgreSQL locally on port `5432` and stores database data in a named Docker volume.
+
+The PostgreSQL container initializes the `taskmanager_db` database on first startup.
+
+Hibernate creates or updates the database tables when the Spring Boot application starts.
+
+### Start the Spring Boot application
+
+On Windows:
 
 ```powershell
 .\mvnw.cmd spring-boot:run
 ```
 
-### Run on Linux or macOS
+On Linux or macOS:
 
 ```bash
 ./mvnw spring-boot:run
@@ -283,17 +417,31 @@ The API will be available at:
 http://localhost:8080
 ```
 
-## Current limitations
+### Stop the local environment
 
-Version 1 uses entity objects directly in HTTP requests and responses.
+Stop the Spring Boot application with `Ctrl+C`.
 
-API testing is currently performed manually with Postman.
+Then stop PostgreSQL:
 
-DTOs, request validation, global exception handling and comprehensive automated tests are not included in this version.
+```bash
+docker compose down
+```
 
-## Next steps
+The named PostgreSQL volume is preserved.
 
-- DTO layer
-- Bean Validation
-- Global exception handling
-- Automated tests
+Do not use `docker compose down -v` unless you intentionally want to delete the PostgreSQL data volume.
+
+## Version history
+
+- `v1.0.0` — basic CRUD API using entities directly in HTTP requests and responses.
+- `v2.0.0` — DTO-based API, validation, centralized error handling, transaction boundaries, unit tests, Docker Compose for PostgreSQL, and Postman verification.
+
+## Current scope
+
+Version 2 focuses on CRUD operations, DTO-based API design, validation, centralized error handling, transaction management, unit testing, and a reproducible PostgreSQL development environment.
+
+Automated testing includes 39 Service and Mapper unit tests. HTTP behavior is additionally verified with the Postman collection.
+
+The Spring Boot application runs locally with Maven, while Docker Compose is used for PostgreSQL.
+
+Authentication, pagination and integration tests are not included in Version 2.
